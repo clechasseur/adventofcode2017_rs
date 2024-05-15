@@ -7,7 +7,7 @@ I have already completed those in [Kotlin before](https://github.com/clechasseur
 
 ## Requirements
 
-* [Rust](https://www.rust-lang.org/) 1.56.1 or later
+* [Rust](https://www.rust-lang.org/) 1.62.1 or later
 
 ## Running the tests
 
