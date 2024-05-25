@@ -17,14 +17,20 @@ I have already completed those in [Kotlin before](https://github.com/clechasseur
 cargo test
 ```
 
+#### With slow tests
+
+```sh
+cargo test --features slow
+```
+
 ### Both puzzles for one day
 
 ```sh
-cargo test day_1
+cargo test day_1 --all-features
 ```
 
 ### Single puzzle
 
 ```sh
-cargo test day_1_part_1
+cargo test day_1_part_1 --all-features
 ```
