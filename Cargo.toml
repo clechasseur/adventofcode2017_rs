@@ -2,9 +2,13 @@
 name = "adventofcode2017-clp"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.66.1"
+
+[features]
+slow = []
 
 [dependencies]
-itertools = "0.12.1"
+itertools = "0.13.0"
 num = "0.4.3"
 strum = "0.26.2"
 strum_macros = "0.26.2"
