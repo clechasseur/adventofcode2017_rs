@@ -1,7 +1,5 @@
-use std::cmp::max;
+use std::cmp::{max, Ordering};
 use std::collections::HashMap;
-
-use regex_static::static_regex;
 
 use crate::input::day_8::INPUT;
 
@@ -11,6 +9,16 @@ pub fn part_1() -> i64 {
 
 pub fn part_2() -> i64 {
     final_registers().max_ever
+}
+
+fn final_registers() -> Registers<'static> {
+    let mut registers = Registers::default();
+    INPUT
+        .iter()
+        .cloned()
+        .map(Into::<Instruction>::into)
+        .for_each(|instruction| instruction.apply(&mut registers));
+    registers
 }
 
 #[derive(Debug, Default)]
@@ -43,57 +51,62 @@ struct Instruction<'a> {
     register: &'a str,
     offset: i64,
     cmp_register: &'a str,
-    cmp_op: &'a str,
+    cmp: Comparison,
     cmp_value: i64,
 }
 
 impl<'a> Instruction<'a> {
     fn apply(&self, registers: &mut Registers<'a>) {
         let cmp_register = registers.get(self.cmp_register);
-        if self.apply_op(cmp_register, self.cmp_value) {
+        if self.cmp.apply(cmp_register, self.cmp_value) {
             registers.update(self.register, |r| r + self.offset);
-        }
-    }
-
-    fn apply_op(&self, a: i64, b: i64) -> bool {
-        match self.cmp_op {
-            "<" => a < b,
-            "<=" => a <= b,
-            ">" => a > b,
-            ">=" => a >= b,
-            "==" => a == b,
-            "!=" => a != b,
-            op => panic!("expected one of '<', '<=', '>', '>=', '==' or '!=', got '{}'", op),
         }
     }
 }
 
 impl<'a> From<&'a str> for Instruction<'a> {
     fn from(value: &'a str) -> Self {
-        let parser =
-            static_regex!(r"^([a-z]+) (inc|dec) (-?\d+) if ([a-z]+) (<=?|>=?|[=!]=) (-?\d+)$");
+        let [register, op, offset, _, cmp_register, cmp, cmp_value] = value
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        let offset = offset
+            .parse::<i64>()
+            .map(|o| if op == "dec" { -o } else { o })
+            .unwrap();
 
-        let (_, [register, op, offset, cmp_register, cmp_op, cmp_value]) =
-            parser.captures(value).unwrap().extract();
         Self {
             register,
-            offset: offset
-                .parse::<i64>()
-                .map(|o| if op == "dec" { -o } else { o })
-                .unwrap(),
+            offset,
             cmp_register,
-            cmp_op,
+            cmp: cmp.into(),
             cmp_value: cmp_value.parse().unwrap(),
         }
     }
 }
 
-fn final_registers() -> Registers<'static> {
-    let mut registers = Registers::default();
-    INPUT
-        .iter()
-        .cloned()
-        .map(Into::<Instruction>::into)
-        .for_each(|instruction| instruction.apply(&mut registers));
-    registers
+#[derive(Debug)]
+struct Comparison(Vec<Ordering>);
+
+impl Comparison {
+    const MATCHING_ORDERINGS: &'static [(char, Ordering)] =
+        &[('<', Ordering::Less), ('>', Ordering::Greater), ('=', Ordering::Equal)];
+
+    fn apply(&self, a: i64, b: i64) -> bool {
+        self.0.contains(&a.cmp(&b))
+    }
+}
+
+impl From<&str> for Comparison {
+    fn from(value: &str) -> Self {
+        Self(if value == "!=" {
+            vec![Ordering::Less, Ordering::Greater]
+        } else {
+            Self::MATCHING_ORDERINGS
+                .iter()
+                .filter_map(|&(c, ord)| value.contains(c).then_some(ord))
+                .collect()
+        })
+    }
 }

@@ -2,7 +2,7 @@
 name = "adventofcode2017-clp"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.66.1"
+rust-version = "1.73.0"
 
 [features]
 slow = []
@@ -10,7 +10,5 @@ slow = []
 [dependencies]
 itertools = "0.13.0"
 num = "0.4.3"
-regex = "1.10.5"
-regex_static = "0.1.1"
 strum = "0.26.2"
 strum_macros = "0.26.2"
