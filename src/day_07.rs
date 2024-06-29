@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use itertools::Itertools;
 
-use crate::input::day_7::INPUT; // &[ProgramSpec]
+use crate::input::day_07::INPUT; // &[ProgramSpec]
 
 pub fn part_1() -> &'static str {
     Tower::build().bottom.borrow().name

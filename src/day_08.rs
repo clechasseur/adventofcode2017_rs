@@ -1,7 +1,7 @@
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 
-use crate::input::day_8::INPUT;
+use crate::input::day_08::INPUT;
 
 pub fn part_1() -> i64 {
     final_registers().values().max().unwrap()

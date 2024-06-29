@@ -6,7 +6,7 @@ use num::{zero, Zero};
 
 use crate::helpers::direction::Direction;
 use crate::helpers::pt::{manhattan, Pt};
-use crate::input::day_3::INPUT;
+use crate::input::day_03::INPUT;
 
 pub fn part_1() -> i64 {
     manhattan(zero(), spiral().nth(INPUT - 1).unwrap())

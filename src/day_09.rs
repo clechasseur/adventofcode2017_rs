@@ -1,4 +1,4 @@
-use crate::input::day_9::INPUT; // &str
+use crate::input::day_09::INPUT; // &str
 
 pub fn part_1() -> usize {
     Group::root().total_score()

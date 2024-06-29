@@ -1,4 +1,4 @@
-use crate::input::day_1::INPUT;
+use crate::input::day_01::INPUT;
 
 pub fn part_1() -> u32 {
     sum(1)

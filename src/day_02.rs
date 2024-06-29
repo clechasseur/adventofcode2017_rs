@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::input::day_2::INPUT; // Two-dimensional array of i32's
+use crate::input::day_02::INPUT; // Two-dimensional array of i32's
 
 pub fn part_1() -> i32 {
     INPUT

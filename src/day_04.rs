@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::input::day_4::INPUT;
+use crate::input::day_04::INPUT;
 
 pub fn part_1() -> usize {
     valid_count(false)

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::input::day_6::INPUT;
+use crate::input::day_06::INPUT;
 
 pub fn part_1() -> usize {
     realloc_loop().cycles()

@@ -2,14 +2,14 @@
 
 #![allow(dead_code)]
 
-pub mod day_1;
-pub mod day_2;
-pub mod day_3;
-pub mod day_4;
-pub mod day_5;
-pub mod day_6;
-pub mod day_7;
-pub mod day_8;
-pub mod day_9;
+pub mod day_01;
+pub mod day_02;
+pub mod day_03;
+pub mod day_04;
+pub mod day_05;
+pub mod day_06;
+pub mod day_07;
+pub mod day_08;
+pub mod day_09;
 pub(crate) mod helpers;
 pub(crate) mod input;

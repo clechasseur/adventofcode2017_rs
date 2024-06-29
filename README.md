@@ -26,11 +26,11 @@ cargo test --features slow
 ### Both puzzles for one day
 
 ```sh
-cargo test day_1 --all-features
+cargo test day_01 --all-features
 ```
 
 ### Single puzzle
 
 ```sh
-cargo test day_1_part_1 --all-features
+cargo test day_01_part_1 --all-features
 ```

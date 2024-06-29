@@ -1,6 +1,6 @@
 use std::iter::successors;
 
-use crate::input::day_5::INPUT;
+use crate::input::day_05::INPUT;
 
 pub fn part_1() -> usize {
     steps(false)

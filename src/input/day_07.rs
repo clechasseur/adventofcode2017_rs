@@ -1,4 +1,4 @@
-use crate::day_7::ProgramSpec;
+use crate::day_07::ProgramSpec;
 
 pub const INPUT: &[ProgramSpec] = &[
     ProgramSpec { name: "bxlur", weight: 38, sub_programs: &[] },
