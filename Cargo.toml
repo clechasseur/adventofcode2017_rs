@@ -8,7 +8,8 @@ rust-version = "1.73.0"
 slow = []
 
 [dependencies]
+anyhow = "1.0.86"
 itertools = "0.13.0"
 num = "0.4.3"
-strum = "0.26.2"
-strum_macros = "0.26.2"
+regex = "1.10.5"
+strum = { version = "0.26.3", features = ["derive"] }

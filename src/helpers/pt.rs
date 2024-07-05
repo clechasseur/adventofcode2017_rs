@@ -1,12 +1,16 @@
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+use std::str::FromStr;
+use std::sync::OnceLock;
 
+use anyhow::{anyhow, Context};
 use num::{zero, Signed, Zero};
+use regex::Regex;
 
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pt<T> {
-    x: T,
-    y: T,
+    pub x: T,
+    pub y: T,
 }
 
 impl<T> Pt<T> {
@@ -22,6 +26,39 @@ where
 {
     fn from(value: (U, V)) -> Self {
         Self::new(value.0.into(), value.1.into())
+    }
+}
+
+impl<T, U, V> From<Pt<T>> for (U, V)
+where
+    T: Into<U> + Into<V>,
+{
+    fn from(value: Pt<T>) -> Self {
+        (value.x.into(), value.y.into())
+    }
+}
+
+impl<T> FromStr for Pt<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+{
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        static REGEX: OnceLock<Regex> = OnceLock::new();
+        let re = REGEX.get_or_init(|| {
+            Regex::new(r"\(?(?<x>-?\d+(?:\.\d*)?),\s*(?<y>-?\d+(?:\.\d*)?)\)?$").unwrap()
+        });
+
+        let captures = re.captures(s).ok_or(anyhow!("wrong Pt format: {}", s))?;
+        let get_capture = |name: &str| {
+            captures[name]
+                .parse::<T>()
+                .with_context(|| format!("invalid {} value: {}", name, &captures[name]))
+        };
+
+        Ok(Pt::new(get_capture("x")?, get_capture("y")?))
     }
 }
 
