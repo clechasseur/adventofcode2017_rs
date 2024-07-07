@@ -1,19 +1,16 @@
-use std::str::FromStr;
+use std::ops::Neg;
 
-use strum::{EnumCount, EnumProperty, FromRepr};
+use num::{one, zero, One, Zero};
+use strum::{EnumCount, FromRepr};
 
 use crate::helpers::pt::Pt;
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, FromRepr, EnumCount, EnumProperty)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum Direction {
-    #[strum(props(displacement = "(1, 0)"))]
     Right,
-    #[strum(props(displacement = "(0, -1)"))]
     Down,
-    #[strum(props(displacement = "(-1, 0)"))]
     Left,
-    #[strum(props(displacement = "(0, 1)"))]
     Up,
 }
 
@@ -28,9 +25,13 @@ impl Direction {
 
     pub fn displacement<T>(&self) -> Pt<T>
     where
-        T: FromStr,
-        <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+        T: Zero + One + Neg<Output = T>,
     {
-        self.get_str("displacement").unwrap().parse().unwrap()
+        match self {
+            Direction::Right => Pt::new(one(), zero()),
+            Direction::Down => Pt::new(zero(), -one::<T>()),
+            Direction::Left => Pt::new(-one::<T>(), zero()),
+            Direction::Up => Pt::new(zero(), one()),
+        }
     }
 }
