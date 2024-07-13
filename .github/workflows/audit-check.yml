@@ -1,8 +1,7 @@
 name: Security audit
 
 on:
-  # TODO re-enable on push when it works
-  #push:
+  push:
   workflow_dispatch:
 
 jobs:
