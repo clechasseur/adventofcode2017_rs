@@ -15,5 +15,6 @@ pub mod day_10;
 pub mod day_11;
 pub mod day_12;
 pub mod day_13;
+pub mod day_14;
 pub(crate) mod helpers;
 pub(crate) mod input;

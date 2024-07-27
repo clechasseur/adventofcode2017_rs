@@ -13,16 +13,27 @@ pub struct KnotHash {
 impl KnotHash {
     const EXTRA_LENGTHS: [u8; 5] = [17, 31, 73, 47, 23];
 
-    pub fn new(input: &str) -> Self {
+    pub fn new<I>(input: I) -> Self
+    where
+        I: AsRef<str>,
+    {
         let lengths = Self::lengths(input);
-        let sparse = Self::sparse(lengths, 64);
-        let dense = Self::dense(sparse);
+        let sparse = Self::sparse_hash(lengths, 64);
+        let dense = Self::dense_hash(sparse);
 
         Self { dense }
     }
 
-    pub fn lengths(input: &str) -> Vec<u8> {
+    pub fn dense(&self) -> &Vec<u8> {
+        &self.dense
+    }
+
+    pub fn lengths<I>(input: I) -> Vec<u8>
+    where
+        I: AsRef<str>,
+    {
         input
+            .as_ref()
             .as_bytes()
             .iter()
             .chain(&Self::EXTRA_LENGTHS)
@@ -30,7 +41,7 @@ impl KnotHash {
             .collect_vec()
     }
 
-    pub fn sparse(lengths: Vec<u8>, rounds: usize) -> Vec<u8> {
+    pub fn sparse_hash(lengths: Vec<u8>, rounds: usize) -> Vec<u8> {
         let numbers = Self::initial_numbers();
 
         let num_lengths = lengths.len() * rounds;
@@ -47,7 +58,7 @@ impl KnotHash {
         numbers.into_iter().map(RefCell::into_inner).collect()
     }
 
-    pub fn dense(sparse: Vec<u8>) -> Vec<u8> {
+    pub fn dense_hash(sparse: Vec<u8>) -> Vec<u8> {
         sparse
             .into_iter()
             .chunks(16)

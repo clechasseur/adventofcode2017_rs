@@ -4,7 +4,7 @@ use crate::helpers::knot_hash::KnotHash;
 use crate::input::day_10::INPUT;
 
 pub fn part_1() -> usize {
-    KnotHash::sparse(part_1_lengths(), 1)
+    KnotHash::sparse_hash(part_1_lengths(), 1)
         .into_iter()
         .map(|n| n as usize)
         .take(2)
