@@ -1,26 +1,36 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-pub struct Loop {
+#[derive(Debug, Copy, Clone)]
+pub struct Loop<T> {
     pub start: usize,
     pub end_exclusive: usize,
+    pub duplicate: T,
 }
 
-impl Loop {
-    pub fn new(start: usize, end_exclusive: usize) -> Self {
-        Self { start, end_exclusive }
+impl<T> Loop<T> {
+    pub fn new(start: usize, end_exclusive: usize, duplicate: T) -> Self {
+        Self { start, end_exclusive, duplicate }
     }
 
+    pub fn len(&self) -> usize {
+        self.end_exclusive - self.start
+    }
+}
+
+impl<T> Loop<T>
+where
+    T: Eq + Hash,
+{
     pub fn find<I>(seq: I) -> Option<Self>
     where
-        I: Iterator,
-        <I as Iterator>::Item: Eq + Hash,
+        I: Iterator<Item = T>,
     {
         let mut seen = HashMap::new();
 
         for (i, v) in seq.enumerate() {
             match seen.get(&v) {
-                Some(&start) => return Some(Self::new(start, i)),
+                Some(&start) => return Some(Self::new(start, i, v)),
                 None => {
                     seen.insert(v, i);
                 },
@@ -30,3 +40,11 @@ impl Loop {
         None
     }
 }
+
+impl<T> PartialEq for Loop<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.start == other.start && self.end_exclusive == other.end_exclusive
+    }
+}
+
+impl<T> Eq for Loop<T> {}
