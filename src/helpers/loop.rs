@@ -17,7 +17,7 @@ impl Loop {
         <I as Iterator>::Item: Eq + Hash,
     {
         let mut seen = HashMap::new();
-        
+
         for (i, v) in seq.enumerate() {
             match seen.get(&v) {
                 Some(&start) => return Some(Self::new(start, i)),
@@ -26,7 +26,7 @@ impl Loop {
                 },
             }
         }
-        
+
         None
     }
 }
