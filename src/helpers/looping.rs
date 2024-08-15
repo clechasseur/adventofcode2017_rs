@@ -50,6 +50,14 @@ impl<T> Looping<T> {
             cycle_pos: 0,
         }
     }
+
+    fn prefix_len(&self) -> usize {
+        self.prefix_size - self.prefix_pos
+    }
+
+    fn cycle_len(&self) -> usize {
+        self.cycle_size - self.cycle_pos
+    }
 }
 
 impl<T> Iterator for Looping<T>
@@ -59,17 +67,16 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.prefix.next() {
-            Some(e) => {
-                self.prefix_pos += 1;
-                Some(e)
-            },
-            None if self.cycle_pos == self.cycle_size => None,
-            None => {
-                let e = self.cycle[self.cycle_pos % self.cycle.len()].clone();
-                self.cycle_pos += 1;
-                Some(e)
-            },
+        if self.prefix_len() != 0 {
+            let e = self.prefix.next();
+            self.prefix_pos += 1;
+            e
+        } else if self.cycle_len() != 0 {
+            let e = self.cycle[self.cycle_pos % self.cycle.len()].clone();
+            self.cycle_pos += 1;
+            Some(e)
+        } else {
+            None
         }
     }
 
@@ -96,16 +103,17 @@ where
     }
 
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        match ((self.prefix_pos + n) < self.prefix_size, (self.cycle_pos + n) < self.cycle_size) {
-            (true, _) => {
-                self.prefix_pos += n;
-                self.prefix.nth(n)
-            },
-            (false, true) => {
-                self.cycle_pos += n;
-                Some(self.cycle[self.cycle_pos % self.cycle.len()].clone())
-            },
-            (false, false) => None,
+        if self.prefix_len() >= n {
+            self.prefix_pos += n;
+            self.prefix.nth(n)
+        } else if self.len() >= n {
+            self.prefix_pos = self.prefix_size;
+            self.cycle_pos += n;
+            Some(self.cycle[self.cycle_pos % self.cycle.len()].clone())
+        } else {
+            self.prefix_pos = self.prefix_size;
+            self.cycle_pos = self.cycle_size;
+            None
         }
     }
 }
@@ -115,7 +123,7 @@ where
     T: Clone,
 {
     fn len(&self) -> usize {
-        (self.prefix_size - self.prefix_pos) + (self.cycle_size - self.cycle_pos)
+        self.prefix_len() + self.cycle_len()
     }
 }
 
