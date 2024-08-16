@@ -23,6 +23,12 @@ cargo test
 cargo test --features slow
 ```
 
+#### With tests for utility functions
+
+```sh
+cargo test --features utils
+```
+
 ### Both puzzles for one day
 
 ```sh
