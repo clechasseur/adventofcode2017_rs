@@ -4,16 +4,12 @@ use std::vec;
 
 use itertools::Itertools;
 
-pub trait LoopingItertools<T> {
-    fn looping(self, size: usize) -> Looping<T>;
-}
-
-impl<T, I> LoopingItertools<T> for I
-where
-    T: Eq + Clone,
-    I: Iterator<Item = T>,
-{
-    fn looping(self, size: usize) -> Looping<T> {
+pub trait LoopingItertools: Iterator {
+    fn looping(self, size: usize) -> Looping<Self::Item>
+    where
+        Self: Sized,
+        Self::Item: PartialEq,
+    {
         let mut prefix = Vec::new();
 
         for e in self {
@@ -29,6 +25,8 @@ where
         panic!("no loop detected");
     }
 }
+
+impl<I> LoopingItertools for I where I: Iterator + ?Sized {}
 
 #[derive(Debug, Clone)]
 pub struct Looping<T> {
@@ -122,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_iterator() {
-        let v = DATA.iter().looping(11).copied().collect::<Vec<_>>();
+        let v = DATA.iter().looping(11).copied().collect_vec();
         assert_eq!([1, 2, 3, 4, 5, 6, 3, 4, 5, 6, 3], *v.as_slice());
     }
 
