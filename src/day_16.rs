@@ -56,21 +56,19 @@ impl FromStr for Move {
         let invalid_move = || format!("invalid move: {s}");
 
         match s.chars().next() {
-            Some(mv) => match mv {
-                's' => Ok(Self::Spin(s[1..].parse()?)),
-                'x' => {
-                    let (a, b) = s[1..].split_once('/').with_context(invalid_move)?;
-                    Ok(Self::Exchange(a.parse()?, b.parse()?))
-                },
-                'p' => {
-                    let (a, b) = s[1..].split_once('/').with_context(invalid_move)?;
-                    Ok(Self::Partner(
-                        a.chars().next().with_context(invalid_move)?,
-                        b.chars().next().with_context(invalid_move)?,
-                    ))
-                },
-                _ => Err(anyhow!("invalid move: {mv}")),
+            Some('s') => Ok(Self::Spin(s[1..].parse()?)),
+            Some('x') => {
+                let (a, b) = s[1..].split_once('/').with_context(invalid_move)?;
+                Ok(Self::Exchange(a.parse()?, b.parse()?))
             },
+            Some('p') => {
+                let (a, b) = s[1..].split_once('/').with_context(invalid_move)?;
+                Ok(Self::Partner(
+                    a.chars().next().with_context(invalid_move)?,
+                    b.chars().next().with_context(invalid_move)?,
+                ))
+            },
+            Some(mv) => Err(anyhow!("invalid move: {mv}")),
             None => Err(anyhow!("empty move string")),
         }
     }
