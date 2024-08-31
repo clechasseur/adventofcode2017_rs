@@ -5,8 +5,10 @@ edition = "2021"
 rust-version = "1.75.0"
 
 [features]
+# default = ["day_18_with_channels"]
 slow = []
 utils = []
+day_18_with_channels = []
 
 [dependencies]
 anyhow = "1.0.86"
