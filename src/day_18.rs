@@ -72,8 +72,8 @@ trait SendQueue<T> {
 }
 
 trait ReceiveQueue<T> {
-    fn pop(&mut self, interpreter_id: i64) -> Option<T>;
-    fn pop_last(&mut self, interpreter_id: i64) -> Option<T>;
+    fn pop(&mut self) -> Option<T>;
+    fn pop_last(&mut self) -> Option<T>;
 }
 
 #[derive(Debug, Clone)]
@@ -92,11 +92,11 @@ impl<T> SendQueue<T> for SyncQueue<T> {
 }
 
 impl<T> ReceiveQueue<T> for SyncQueue<T> {
-    fn pop(&mut self, _interpreter_id: i64) -> Option<T> {
+    fn pop(&mut self) -> Option<T> {
         self.0.borrow_mut().pop_front()
     }
 
-    fn pop_last(&mut self, _interpreter_id: i64) -> Option<T> {
+    fn pop_last(&mut self) -> Option<T> {
         self.0.borrow_mut().pop_back()
     }
 }
@@ -179,7 +179,6 @@ enum Instruction {
 impl Instruction {
     pub fn execute(
         &self,
-        id: i64,
         registers: &mut Registers,
         send_count: &mut usize,
         send_queue: &mut impl SendQueue<i64>,
@@ -188,10 +187,8 @@ impl Instruction {
     ) -> Result<InstructionResult, anyhow::Error> {
         match self {
             Self::Snd(value) => {
-                let value = value.get(registers);
                 *send_count += 1;
-                send_queue.push(value);
-                println!("interpreter {id} sent {value} (send_count: {})", *send_count);
+                send_queue.push(value.get(registers));
             },
             Self::Set(register, value) => registers.set(*register, value.get(registers)),
             Self::Add(register, value) => {
@@ -207,14 +204,13 @@ impl Instruction {
                 if part_1 {
                     if registers.get(*register) != 0 {
                         return Ok(InstructionResult::Received(
-                            rcv_queue.pop_last(id).with_context(|| "no sound played")?,
+                            rcv_queue.pop_last().with_context(|| "no sound played")?,
                         ));
                     }
                 } else {
-                    return Ok(match rcv_queue.pop(id) {
+                    return Ok(match rcv_queue.pop() {
                         Some(n) => {
                             registers.set(*register, n);
-                            println!("interpreter {id} received {n}");
                             InstructionResult::Received(n)
                         },
                         None => InstructionResult::Waiting,
@@ -275,10 +271,8 @@ impl FromStr for Instruction {
 struct Program(Vec<Instruction>);
 
 impl Program {
-    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         &self,
-        id: i64,
         ip: i64,
         registers: &mut Registers,
         send_count: &mut usize,
@@ -289,7 +283,7 @@ impl Program {
         self.0
             .get(ip as usize)
             .with_context(|| format!("invalid instruction pointer: {ip}"))?
-            .execute(id, registers, send_count, send_queue, rcv_queue, part_1)
+            .execute(registers, send_count, send_queue, rcv_queue, part_1)
     }
 }
 
@@ -303,7 +297,6 @@ impl FromStr for Program {
 
 #[derive(Debug)]
 struct DuetInterpreter<SQ, RQ> {
-    id: i64,
     program: Program,
     registers: Registers,
     ip: i64,
@@ -319,7 +312,6 @@ impl DuetInterpreter<SyncQueue<i64>, SyncQueue<i64>> {
         let rcv_queue = send_queue.clone();
 
         Self {
-            id: 0,
             program,
             registers: Registers::default(),
             ip: 0,
@@ -336,7 +328,7 @@ impl<SQ, RQ> DuetInterpreter<SQ, RQ> {
         let mut registers = Registers::default();
         registers.set('p', id);
 
-        Self { id, program, registers, ip: 0, send_count: 0, send_queue, rcv_queue, part_1: false }
+        Self { program, registers, ip: 0, send_count: 0, send_queue, rcv_queue, part_1: false }
     }
 
     pub fn send_count(&self) -> usize {
@@ -351,7 +343,6 @@ where
 {
     pub fn execute_next(&mut self) -> Result<InstructionResult, anyhow::Error> {
         let result = self.program.execute(
-            self.id,
             self.ip,
             &mut self.registers,
             &mut self.send_count,
@@ -365,28 +356,23 @@ where
 }
 
 mod with_channels {
-    use std::fmt::Display;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::mpsc::{Receiver, Sender};
+    use std::sync::atomic::{AtomicU8, Ordering};
+    use std::sync::mpsc::{Receiver, SendError, Sender, TryRecvError};
     use std::sync::{mpsc, Arc};
     use std::thread;
 
     use super::*;
 
     #[derive(Debug, Default)]
-    struct DeadlockDetector(AtomicBool);
+    struct DeadlockDetector(AtomicU8);
 
     impl DeadlockDetector {
-        fn request_read(&self) -> bool {
-            self.0
-                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-                .is_ok()
+        fn notify_read_attempt(&self) -> u8 {
+            self.0.fetch_add(1, Ordering::SeqCst) + 1
         }
 
-        fn release_read(&self) {
-            self.0
-                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-                .expect("release_read should succeed if the read request succeeded");
+        fn notify_read_complete(&self) {
+            self.0.fetch_sub(1, Ordering::SeqCst);
         }
     }
 
@@ -395,7 +381,12 @@ mod with_channels {
 
     impl<T> SendQueue<T> for SendChannel<T> {
         fn push(&mut self, value: T) {
-            self.0.send(value).unwrap()
+            match self.0.send(value) {
+                Ok(()) => (),
+                Err(SendError(_)) => {
+                    println!("tried to send a value but failed; wat?");
+                },
+            }
         }
     }
 
@@ -405,32 +396,38 @@ mod with_channels {
         receiver: Receiver<T>,
     }
 
-    impl<T> ReceiveQueue<T> for ReceiveChannel<T>
-    where
-        T: Display,
-    {
-        fn pop(&mut self, interpreter_id: i64) -> Option<T> {
-            if self.deadlock_detector.request_read() {
-                println!("interpreter {interpreter_id}: waiting to receive value");
-                // We're the only ones currently attempting to read, so go ahead.
-                if let Ok(value) = self.receiver.recv() {
-                    self.deadlock_detector.release_read();
-                    println!("interpreter {interpreter_id}: received value {value}");
+    impl<T> ReceiveQueue<T> for ReceiveChannel<T> {
+        fn pop(&mut self) -> Option<T> {
+            let read_count = self.deadlock_detector.notify_read_attempt();
+
+            match self.receiver.try_recv() {
+                Ok(value) => {
+                    self.deadlock_detector.notify_read_complete();
                     Some(value)
-                } else {
-                    // This means the other interpreter detected a deadlock; stop.
-                    println!("interpreter {interpreter_id}: recv() failed, other interpreter detected a deadlock");
+                },
+                Err(TryRecvError::Empty) if read_count > 1 => {
+                    // Receiver came out empty and both interpreter are trying to receive: deadlock.
                     None
-                }
-            } else {
-                // This means the other interpreter is currently waiting for a read as well.
-                // This means we've reached a deadlock; stop.
-                println!("interpreter {interpreter_id}: deadlock detected, stopping");
-                None
+                },
+                Err(TryRecvError::Empty) => {
+                    // Receiver came out empty, but as far as we know, we're the only ones
+                    // to receive currently, so try again, blocking this time.
+                    if let Ok(value) = self.receiver.recv() {
+                        self.deadlock_detector.notify_read_complete();
+                        Some(value)
+                    } else {
+                        // The other interpreter detected a deadlock and bailed out; stop.
+                        None
+                    }
+                },
+                Err(TryRecvError::Disconnected) => {
+                    // The other interpreter detected a deadlock and bailed out; stop.
+                    None
+                },
             }
         }
 
-        fn pop_last(&mut self, _interpreter_id: i64) -> Option<T> {
+        fn pop_last(&mut self) -> Option<T> {
             unreachable!("pop_last is not supported for part 2");
         }
     }
