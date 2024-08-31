@@ -275,6 +275,7 @@ impl FromStr for Instruction {
 struct Program(Vec<Instruction>);
 
 impl Program {
+    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         &self,
         id: i64,
@@ -365,10 +366,11 @@ where
 
 mod with_channels {
     use std::fmt::Display;
-    use std::sync::{mpsc, Arc};
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc::{Receiver, Sender};
+    use std::sync::{mpsc, Arc};
     use std::thread;
+
     use super::*;
 
     #[derive(Debug, Default)]
@@ -376,7 +378,9 @@ mod with_channels {
 
     impl DeadlockDetector {
         fn request_read(&self) -> bool {
-            self.0.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_ok()
+            self.0
+                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
         }
 
         fn release_read(&self) {
@@ -454,12 +458,7 @@ mod with_channels {
         let make_interpreter = |id, sender, receiver| {
             let program = program.clone();
             thread::spawn(move || {
-                let mut interpreter = DuetInterpreter::for_part_2(
-                    program,
-                    id,
-                    sender,
-                    receiver,
-                );
+                let mut interpreter = DuetInterpreter::for_part_2(program, id, sender, receiver);
 
                 loop {
                     if interpreter.execute_next().unwrap() == InstructionResult::Waiting {
