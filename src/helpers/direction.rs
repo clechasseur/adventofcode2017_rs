@@ -1,12 +1,14 @@
 use std::ops::Neg;
 
 use num::{one, zero, One, Zero};
-use strum::{EnumCount, FromRepr};
+use strum::{Display, EnumCount, FromRepr};
 
 use crate::helpers::pt::Pt;
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, FromRepr, EnumCount)]
+#[derive(
+    Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, FromRepr, EnumCount, Display,
+)]
 pub enum Direction {
     Right,
     Down,
