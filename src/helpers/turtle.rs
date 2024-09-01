@@ -1,64 +1,49 @@
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Neg};
 
-use num::{One, Zero};
+use num::{zero, One, Zero};
 
 use crate::helpers::direction::Direction;
 use crate::helpers::pt::Pt;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Turtle<T> {
-    pos: Pt<T>,
-    dir: Direction,
+    pub position: Pt<T>,
+    pub direction: Direction,
 }
 
 impl<T> Turtle<T> {
-    pub fn new(pos: Pt<T>, dir: Direction) -> Self {
-        Self { pos, dir }
+    pub fn new(position: Pt<T>, direction: Direction) -> Self {
+        Self { position, direction }
     }
 
-    pub fn direction(&self) -> Direction {
-        self.dir
-    }
-}
-
-impl<T> Turtle<T>
-where
-    Pt<T>: Copy,
-{
-    pub fn position(&self) -> Pt<T> {
-        self.pos
-    }
-}
-
-impl<T> Turtle<T>
-where
-    T: Zero,
-{
-    pub fn at_center(dir: Direction) -> Self {
-        Self::new(Pt::zero(), dir)
-    }
-}
-
-impl<T> Turtle<T>
-where
-    T: Copy,
-{
-    pub fn turn_left(&self) -> Self {
-        Self { pos: self.pos, dir: self.dir.turn_left() }
+    pub fn from_zero(direction: Direction) -> Self
+    where
+        Pt<T>: Zero,
+    {
+        Self::new(zero(), direction)
     }
 
-    pub fn turn_right(&self) -> Self {
-        Self { pos: self.pos, dir: self.dir.turn_right() }
+    pub fn turn_left(&self) -> Self
+    where
+        Pt<T>: Copy,
+    {
+        Self { direction: self.direction.turn_left(), ..*self }
     }
-}
 
-impl<T> Turtle<T>
-where
-    T: Copy + Zero + One + Neg<Output = T> + Add<Output = T>,
-{
-    pub fn advance(&self) -> Self {
-        Self { pos: self.pos + self.dir.displacement(), dir: self.dir }
+    pub fn turn_right(&self) -> Self
+    where
+        Pt<T>: Copy,
+    {
+        Self { direction: self.direction.turn_right(), ..*self }
+    }
+
+    pub fn advance(&self) -> Self
+    where
+        T: Zero + One + Neg<Output = T> + Add<Output = T>,
+        Pt<T>: Copy,
+    {
+        Self { position: self.position + self.direction.displacement(), ..*self }
     }
 }
 
@@ -67,6 +52,6 @@ where
     Pt<T>: Display,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{ position: {}, direction: {} }}", self.pos, self.dir)
+        write!(f, "{{ position: {}, direction: {} }}", self.position, self.direction)
     }
 }

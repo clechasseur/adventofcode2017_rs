@@ -3,9 +3,10 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
 use std::sync::OnceLock;
 
-use anyhow::{anyhow, Context};
 use num::{zero, Signed, Zero};
 use regex::Regex;
+
+use crate::helpers::regex::EzCapturesHelper;
 
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pt3d<T> {
@@ -43,9 +44,8 @@ where
 impl<T> FromStr for Pt3d<T>
 where
     T: FromStr,
-    <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
 {
-    type Err = anyhow::Error;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         static REGEX: OnceLock<Regex> = OnceLock::new();
@@ -56,14 +56,8 @@ where
             .unwrap()
         });
 
-        let captures = re.captures(s).ok_or(anyhow!("wrong Pt3d format: {}", s))?;
-        let get_capture = |name: &str| {
-            captures[name]
-                .parse::<T>()
-                .with_context(|| format!("invalid {} value: {}", name, &captures[name]))
-        };
-
-        Ok(Self::new(get_capture("x")?, get_capture("y")?, get_capture("z")?))
+        let captures = re.ez_captures(s, "Pt3d");
+        Ok(Self::new(captures.get("x"), captures.get("y"), captures.get("z")))
     }
 }
 
