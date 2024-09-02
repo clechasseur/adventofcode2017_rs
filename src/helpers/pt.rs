@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use num::{zero, Signed, Zero};
 use regex::Regex;
 
-use crate::helpers::regex::EzCapturesHelper;
+use crate::helpers::regex::CapturesHelper;
 
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pt<T> {
@@ -51,8 +51,10 @@ where
             Regex::new(r"\(?(?<x>-?\d+(?:\.\d*)?),\s*(?<y>-?\d+(?:\.\d*)?)\)?$").unwrap()
         });
 
-        let captures = re.ez_captures(s, "Pt");
-        Ok(Self::new(captures.get("x"), captures.get("y")))
+        let captures = re
+            .captures(s)
+            .unwrap_or_else(|| panic!("invalid Pt value: {s}"));
+        Ok(Self::new(captures.ez_get("x"), captures.ez_get("y")))
     }
 }
 

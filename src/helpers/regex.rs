@@ -1,30 +1,20 @@
 use std::str::FromStr;
 
-use regex::{Captures, Regex};
+use regex::Captures;
 
-#[derive(Debug)]
-pub struct EzCaptures<'h>(Captures<'h>);
+pub trait CapturesHelper {
+    fn ez_get<T>(&self, name: &str) -> T
+    where
+        T: FromStr;
+}
 
-impl<'h> EzCaptures<'h> {
-    pub fn get<T>(&self, name: &str) -> T
+impl<'h> CapturesHelper for Captures<'h> {
+    fn ez_get<T>(&self, name: &str) -> T
     where
         T: FromStr,
     {
-        self.0[name]
+        self[name]
             .parse::<T>()
-            .unwrap_or_else(|_| panic!("invalid {name} value: {}", &self.0[name]))
-    }
-}
-
-pub trait EzCapturesHelper {
-    fn ez_captures<'h>(&self, haystack: &'h str, to_parse: &str) -> EzCaptures<'h>;
-}
-
-impl EzCapturesHelper for Regex {
-    fn ez_captures<'h>(&self, haystack: &'h str, to_parse: &str) -> EzCaptures<'h> {
-        EzCaptures(
-            self.captures(haystack)
-                .unwrap_or_else(|| panic!("wrong {to_parse} format: {haystack}")),
-        )
+            .unwrap_or_else(|_| panic!("invalid value for {name}: {}", &self[name]))
     }
 }

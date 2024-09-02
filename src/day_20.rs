@@ -4,20 +4,21 @@ use std::str::FromStr;
 use std::sync::OnceLock;
 
 use itertools::Itertools;
+use num::zero;
 use regex::Regex;
 
-use crate::helpers::pt_3d::Pt3d;
-use crate::helpers::regex::EzCapturesHelper;
+use crate::helpers::pt_3d::{manhattan, Pt3d};
+use crate::helpers::regex::CapturesHelper;
 use crate::input::day_20::INPUT;
 
 pub fn part_1() -> usize {
     Universe::default()
         .iter()
         .sorted_unstable_by(|p1, p2| {
-            p1.abs_acceleration()
-                .cmp(&p2.abs_acceleration())
-                .then_with(|| p1.abs_velocity().cmp(&p2.abs_velocity()))
-                .then_with(|| p1.abs_position().cmp(&p2.abs_position()))
+            distance_to_0(p1.acceleration)
+                .cmp(&distance_to_0(p2.acceleration))
+                .then_with(|| distance_to_0(p1.velocity).cmp(&distance_to_0(p2.velocity)))
+                .then_with(|| distance_to_0(p1.position).cmp(&distance_to_0(p2.position)))
         })
         .next()
         .unwrap()
@@ -42,6 +43,10 @@ fn expanding_universe() -> impl Iterator<Item = Universe> {
 
 type Coords = Pt3d<i64>;
 
+fn distance_to_0(c: Coords) -> i64 {
+    manhattan(zero(), c)
+}
+
 #[derive(Debug, Default, Copy, Clone)]
 struct Particle {
     pub id: usize,
@@ -55,22 +60,10 @@ impl Particle {
         Self { id, ..self }
     }
 
-    pub fn move_one_tick(self) -> Self {
+    pub fn move_one_tick(&self) -> Self {
         let velocity = self.velocity + self.acceleration;
         let position = self.position + velocity;
-        Self { position, velocity, ..self }
-    }
-
-    pub fn abs_position(&self) -> i64 {
-        self.position.x.abs() + self.position.y.abs() + self.position.z.abs()
-    }
-
-    pub fn abs_velocity(&self) -> i64 {
-        self.velocity.x.abs() + self.velocity.y.abs() + self.velocity.z.abs()
-    }
-
-    pub fn abs_acceleration(&self) -> i64 {
-        self.acceleration.x.abs() + self.acceleration.y.abs() + self.acceleration.z.abs()
+        Self { position, velocity, ..*self }
     }
 }
 
@@ -83,11 +76,13 @@ impl FromStr for Particle {
             Regex::new(r"^p=(?<p>\(.+\)),\s*v=(?<v>\(.+\)),\s*a=(?<a>\(.+\))$").unwrap()
         });
 
-        let captures = re.ez_captures(s, "Particle");
+        let captures = re
+            .captures(s)
+            .unwrap_or_else(|| panic!("invalid Particle value: {s}"));
         Ok(Self {
-            position: captures.get("p"),
-            velocity: captures.get("v"),
-            acceleration: captures.get("a"),
+            position: captures.ez_get("p"),
+            velocity: captures.ez_get("v"),
+            acceleration: captures.ez_get("a"),
             ..Self::default()
         })
     }
@@ -110,7 +105,7 @@ impl Universe {
     }
 
     pub fn move_one_tick(&self) -> Self {
-        Self::new(self.0.iter().copied().map(Particle::move_one_tick))
+        Self::new(self.0.iter().map(Particle::move_one_tick))
     }
 
     pub fn particle_ids(&self) -> impl Iterator<Item = usize> + '_ {

@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 use num::{zero, Signed, Zero};
 use regex::Regex;
 
-use crate::helpers::regex::EzCapturesHelper;
+use crate::helpers::regex::CapturesHelper;
 
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pt3d<T> {
@@ -56,8 +56,10 @@ where
             .unwrap()
         });
 
-        let captures = re.ez_captures(s, "Pt3d");
-        Ok(Self::new(captures.get("x"), captures.get("y"), captures.get("z")))
+        let captures = re
+            .captures(s)
+            .unwrap_or_else(|| panic!("invalid Pt3d value: {s}"));
+        Ok(Self::new(captures.ez_get("x"), captures.ez_get("y"), captures.ez_get("z")))
     }
 }
 
