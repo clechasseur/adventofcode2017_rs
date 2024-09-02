@@ -5,6 +5,7 @@ use std::sync::OnceLock;
 
 use itertools::Itertools;
 use num::zero;
+use paste::paste;
 use regex::Regex;
 
 use crate::helpers::pt_3d::{manhattan, Pt3d};
@@ -15,10 +16,9 @@ pub fn part_1() -> usize {
     Universe::default()
         .iter()
         .sorted_unstable_by(|p1, p2| {
-            distance_to_0(p1.acceleration)
-                .cmp(&distance_to_0(p2.acceleration))
-                .then_with(|| distance_to_0(p1.velocity).cmp(&distance_to_0(p2.velocity)))
-                .then_with(|| distance_to_0(p1.position).cmp(&distance_to_0(p2.position)))
+            cmp_acceleration(p1, p2)
+                .then_with(|| cmp_velocity(p1, p2))
+                .then_with(|| cmp_position(p1, p2))
         })
         .next()
         .unwrap()
@@ -31,13 +31,22 @@ pub fn part_2() -> usize {
 
 fn expanding_universe() -> impl Iterator<Item = Universe> {
     successors(Some(Universe::default()), |universe| {
-        let expanded = universe.move_one_tick();
+        let expanded_universe = universe.move_one_tick();
 
-        let changing = universe
-            .particle_ids()
-            .zip(expanded.particle_ids())
-            .any(|(p1, p2)| p1 != p2);
-        changing.then_some(expanded)
+        let blueshift = 'blue: {
+            let mut distances = universe.distances();
+            for (ep1_id, ep2_id, ed) in expanded_universe.distances() {
+                let (_, _, d) = distances
+                    .find(|&(p1_id, p2_id, _)| p1_id == ep1_id && p2_id == ep2_id)
+                    .unwrap();
+                if d >= ed {
+                    break 'blue true;
+                }
+            }
+            false
+        };
+
+        blueshift.then_some(expanded_universe)
     })
 }
 
@@ -46,6 +55,20 @@ type Coords = Pt3d<i64>;
 fn distance_to_0(c: Coords) -> i64 {
     manhattan(zero(), c)
 }
+
+macro_rules! cmp_attribute {
+    ($attr:ident) => {
+        paste! {
+            fn [<cmp_ $attr>](p1: &Particle, p2: &Particle) -> ::std::cmp::Ordering {
+                distance_to_0(p1.$attr).cmp(&distance_to_0(p2.$attr))
+            }
+        }
+    };
+}
+
+cmp_attribute!(position);
+cmp_attribute!(velocity);
+cmp_attribute!(acceleration);
 
 #[derive(Debug, Default, Copy, Clone)]
 struct Particle {
@@ -94,12 +117,16 @@ struct Universe(Vec<Particle>);
 impl Universe {
     fn new<I>(particles: I) -> Self
     where
-        I: Iterator<Item = Particle>,
+        I: IntoIterator<Item = Particle>,
     {
         Self(
             particles
-                .sorted_by_key(|p| p.position)
-                .dedup_by(|p1, p2| p1.position == p2.position)
+                .into_iter()
+                .sorted_unstable_by_key(|p| p.position)
+                .dedup_by_with_count(|p1, p2| p1.position == p2.position)
+                .filter(|&(count, _)| count == 1)
+                .map(|(_, p)| p)
+                .sorted_unstable_by_key(|p| p.id)
                 .collect_vec(),
         )
     }
@@ -108,8 +135,11 @@ impl Universe {
         Self::new(self.0.iter().map(Particle::move_one_tick))
     }
 
-    pub fn particle_ids(&self) -> impl Iterator<Item = usize> + '_ {
-        self.0.iter().map(|p| p.id)
+    pub fn distances(&self) -> impl Iterator<Item = (usize, usize, i64)> + '_ {
+        self.0
+            .iter()
+            .tuple_combinations()
+            .map(|(p1, p2)| (p1.id, p2.id, manhattan(p1.position, p2.position)))
     }
 }
 
