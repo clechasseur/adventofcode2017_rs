@@ -79,10 +79,12 @@ impl Pattern {
     }
 
     pub fn into_combinations(self) -> impl Iterator<Item = Self> {
-        vec![self.flip_horizontally(), self]
-            .into_iter()
-            .flat_map(|pattern| vec![pattern.flip_vertically(), pattern])
-            .flat_map(Self::rotations)
+        successors(Some((self, true)), |(pattern, first)| {
+            first.then(|| (pattern.flip_horizontally(), false))
+        })
+        .map(|(pattern, _)| pattern)
+        .flat_map(|pattern| vec![pattern.flip_vertically(), pattern])
+        .flat_map(Self::rotations)
     }
 
     fn flip_horizontally(&self) -> Self {
@@ -139,10 +141,13 @@ struct Rules(HashMap<Pattern, Pattern>);
 
 impl Rules {
     pub fn transform(&self, pattern: &Pattern) -> Pattern {
-        self.0
-            .get(pattern)
-            .unwrap_or_else(|| panic!("no rule found for '{pattern}'"))
+        pattern
             .clone()
+            .into_combinations()
+            .map(|pattern| self.0.get(&pattern).cloned())
+            .find(|pattern| pattern.is_some())
+            .unwrap_or_else(|| panic!("no rule found for '{pattern}'"))
+            .unwrap()
     }
 }
 
@@ -152,15 +157,16 @@ impl FromStr for Rules {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(
             s.lines()
-                .flat_map(|line| {
+                .map(|line| {
                     let (from, to) = line
                         .split(" => ")
                         .map(|pat| pat.parse::<Pattern>().unwrap())
                         .collect_tuple()
                         .unwrap();
+                    (from, to)
 
-                    from.into_combinations()
-                        .map(move |pattern| (pattern, to.clone()))
+                    // from.into_combinations()
+                    //     .map(move |pattern| (pattern, to.clone()))
                 })
                 .collect(),
         ))
