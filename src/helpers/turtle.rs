@@ -38,6 +38,13 @@ impl<T> Turtle<T> {
         Self { direction: self.direction.turn_right(), ..*self }
     }
 
+    pub fn turn_around(&self) -> Self
+    where
+        Pt<T>: Copy,
+    {
+        Self { direction: self.direction.turn_around(), ..*self }
+    }
+
     pub fn advance(&self) -> Self
     where
         T: Zero + One + Neg<Output = T> + Add<Output = T>,

@@ -25,6 +25,10 @@ impl Direction {
         Self::from_repr(((*self as u8) + 1) % (Self::COUNT as u8)).unwrap()
     }
 
+    pub fn turn_around(&self) -> Self {
+        Self::from_repr(((*self as u8) + 2) % (Self::COUNT as u8)).unwrap()
+    }
+
     pub fn displacement<T>(&self) -> Pt<T>
     where
         T: Zero + One + Neg<Output = T>,
