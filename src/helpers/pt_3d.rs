@@ -8,8 +8,9 @@ use regex::Regex;
 
 use crate::helpers::regex::CapturesHelper;
 
+/// A point in 3D space.
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Pt3d<T> {
+pub struct Pt3d<T = i64> {
     pub x: T,
     pub y: T,
     pub z: T,
@@ -27,6 +28,7 @@ where
     V: Into<T>,
     W: Into<T>,
 {
+    /// Converts form a 3-number tuple to a [`Pt3D`].
     fn from(value: (U, V, W)) -> Self {
         Self::new(value.0.into(), value.1.into(), value.2.into())
     }
@@ -36,6 +38,7 @@ impl<T, U, V, W> From<Pt3d<T>> for (U, V, W)
 where
     T: Into<U> + Into<V> + Into<W>,
 {
+    /// Converts from a [`Pt3D`] to a 3-number tuple.
     fn from(value: Pt3d<T>) -> Self {
         (value.x.into(), value.y.into(), value.z.into())
     }
@@ -47,6 +50,8 @@ where
 {
     type Err = ();
 
+    /// Parses a [`Pt3D`] from a string in the form `(x, y, z)`.
+    /// Parentheses and whitespace are optional.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         static REGEX: OnceLock<Regex> = OnceLock::new();
         let re = REGEX.get_or_init(|| {
@@ -129,6 +134,9 @@ where
     }
 }
 
+/// Returns the [Manhattan distance] between two points in 3D space.
+///
+/// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
 pub fn manhattan<T>(a: Pt3d<T>, b: Pt3d<T>) -> T
 where
     T: Signed,

@@ -1,7 +1,7 @@
 use std::iter::successors;
 
 use itertools::Itertools;
-use num::Zero;
+use num::{zero, Zero};
 use strum::EnumString;
 
 use crate::helpers::pt::{manhattan, Pt};
@@ -19,26 +19,26 @@ pub fn part_2() -> usize {
         .unwrap()
 }
 
-fn child_path() -> impl Iterator<Item = Pt<isize>> {
+fn child_path() -> impl Iterator<Item = Pt> {
     INPUT
         .split(',')
         .map(|dir| dir.parse::<HexDirection>().unwrap())
-        .scan(Pt::zero(), |pt, dir| {
+        .scan(zero(), |pt: &mut Pt, dir| {
             *pt += dir.displacement();
             Some(*pt)
         })
 }
 
-fn child_position() -> Pt<isize> {
+fn child_position() -> Pt {
     child_path().last().unwrap()
 }
 
-fn distance_to(goal: Pt<isize>) -> usize {
+fn distance_to(goal: Pt) -> usize {
     path_to(goal).count() - 1
 }
 
-fn path_to(goal: Pt<isize>) -> impl Iterator<Item = Pt<isize>> {
-    successors(Some(Pt::<isize>::zero()), move |&pt| {
+fn path_to(goal: Pt) -> impl Iterator<Item = Pt> {
+    successors(Some(zero()), move |&pt: &Pt| {
         match ((goal.x - pt.x).signum(), (goal.y - pt.y).signum()) {
             (0, 0) => None,
             (0, y) => Some(pt + Pt::new(0, y * 2)),
@@ -59,7 +59,7 @@ enum HexDirection {
 }
 
 impl HexDirection {
-    fn displacement(&self) -> Pt<isize> {
+    fn displacement(&self) -> Pt {
         match self {
             HexDirection::NW => Pt::new(-1, 1),
             HexDirection::N => Pt::new(0, 2),

@@ -22,15 +22,14 @@ fn blockade(dir: Direction) -> u8 {
     }
 }
 
-fn packet() -> impl Iterator<Item = (Turtle<i64>, Option<u8>)> {
+fn packet() -> impl Iterator<Item = (Turtle, Option<u8>)> {
     let input: Vec<_> = INPUT.lines().collect();
 
-    let start_x = input[0].bytes().find_position(|&c| c == b'|').unwrap().0;
-    let start_pos = Pt::new(start_x as i64, 0);
+    let start_x = input[0].bytes().find_position(|&c| c == b'|').unwrap().0 as i64;
+    let start_pos = Pt::new(start_x, 0);
     let turtle = Turtle::new(start_pos, Direction::Down);
 
-    let at =
-        move |t: &Turtle<i64>| input[(-t.position.y) as usize].as_bytes()[t.position.x as usize];
+    let at = move |t: &Turtle| input[t.position.y as usize].as_bytes()[t.position.x as usize];
 
     successors(Some((turtle, None)), move |(turtle, _)| {
         Some(turtle.advance())

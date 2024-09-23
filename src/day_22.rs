@@ -25,7 +25,7 @@ fn infections_after(bursts: usize, evolved: bool) -> usize {
     state.infections
 }
 
-type Node = Pt<isize>;
+type Node = Pt;
 
 #[repr(usize)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, FromRepr, EnumCount)]
@@ -65,13 +65,12 @@ impl FromStr for Cluster {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(
             s.lines()
-                .rev() // It's opposite day
                 .enumerate()
                 .flat_map(|(y, row)| {
                     row.bytes()
                         .enumerate()
                         .filter(|&(_, node)| node == b'#')
-                        .map(move |(x, _)| (Node::new(x as isize, y as isize), NodeState::Infected))
+                        .map(move |(x, _)| (Node::new(x as i64, y as i64), NodeState::Infected))
                 })
                 .collect(),
         ))
@@ -84,7 +83,7 @@ impl Default for Cluster {
     }
 }
 
-type Carrier = Turtle<isize>;
+type Carrier = Turtle;
 
 #[derive(Debug)]
 struct State {

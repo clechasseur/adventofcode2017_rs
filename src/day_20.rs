@@ -50,7 +50,7 @@ fn expanding_universe() -> impl Iterator<Item = Universe> {
     })
 }
 
-type Coords = Pt3d<i64>;
+type Coords = Pt3d;
 
 fn distance_to_0(c: Coords) -> i64 {
     manhattan(zero(), c)

@@ -16,7 +16,7 @@ pub fn part_2() -> i64 {
     spiral_stress_test().find(|&v| v > (INPUT as i64)).unwrap()
 }
 
-fn spiral() -> impl Iterator<Item = Pt<i64>> {
+fn spiral() -> impl Iterator<Item = Pt> {
     let mut pt = zero();
     let mut max_moves = 1;
     let mut moves = 1;
@@ -46,7 +46,7 @@ fn spiral_stress_test() -> impl Iterator<Item = i64> {
     let mut values = HashMap::new();
     let around: Vec<_> = (-1i64..=1)
         .cartesian_product(-1i64..=1)
-        .map(Into::<Pt<_>>::into)
+        .map(Pt::from)
         .filter(|pt| !pt.is_zero())
         .collect();
 

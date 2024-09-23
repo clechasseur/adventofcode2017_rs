@@ -17,7 +17,7 @@ struct Disk {
 }
 
 impl Disk {
-    const NEIGHBOURS: [Pt<i32>; 4] = [Pt::new(-1, 0), Pt::new(0, -1), Pt::new(1, 0), Pt::new(0, 1)];
+    const NEIGHBOURS: [Pt; 4] = [Pt::new(-1, 0), Pt::new(0, -1), Pt::new(1, 0), Pt::new(0, 1)];
 
     pub fn sda() -> Self {
         Self {
@@ -57,7 +57,7 @@ impl Disk {
         count
     }
 
-    fn used_at(&self, pt: Pt<i32>) -> bool {
+    fn used_at(&self, pt: Pt) -> bool {
         if pt.x < 0 || pt.y < 0 {
             return false;
         }
@@ -72,7 +72,7 @@ impl Disk {
             .unwrap_or(false)
     }
 
-    fn fill_region(&self, pt: Pt<i32>, region: &mut HashSet<Pt<i32>>) {
+    fn fill_region(&self, pt: Pt, region: &mut HashSet<Pt>) {
         if !region.contains(&pt) && self.used_at(pt) {
             region.insert(pt);
 

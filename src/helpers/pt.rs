@@ -8,8 +8,9 @@ use regex::Regex;
 
 use crate::helpers::regex::CapturesHelper;
 
+/// A point in 2D space.
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Pt<T> {
+pub struct Pt<T = i64> {
     pub x: T,
     pub y: T,
 }
@@ -25,6 +26,7 @@ where
     U: Into<T>,
     V: Into<T>,
 {
+    /// Converts from a 2-number tuple to a [`Pt`].
     fn from(value: (U, V)) -> Self {
         Self::new(value.0.into(), value.1.into())
     }
@@ -34,6 +36,7 @@ impl<T, U, V> From<Pt<T>> for (U, V)
 where
     T: Into<U> + Into<V>,
 {
+    /// Converts from a [`Pt`] to a 2-number tuple.
     fn from(value: Pt<T>) -> Self {
         (value.x.into(), value.y.into())
     }
@@ -45,6 +48,8 @@ where
 {
     type Err = ();
 
+    /// Parses a [`Pt`] from a string in the form `(x, y)`.
+    /// Parentheses and whitespace are optional.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         static REGEX: OnceLock<Regex> = OnceLock::new();
         let re = REGEX.get_or_init(|| {
@@ -122,6 +127,9 @@ where
     }
 }
 
+/// Returns the [Manhattan distance] between two points in 2D space.
+///
+/// [Manhattan distance]: https://en.wikipedia.org/wiki/Taxicab_geometry
 pub fn manhattan<T>(a: Pt<T>, b: Pt<T>) -> T
 where
     T: Signed,
