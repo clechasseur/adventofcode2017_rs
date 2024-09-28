@@ -1,10 +1,10 @@
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
 
+use crate::helpers::duet::{read_instructions, read_register, read_value, Queue, Registers, Value};
 use crate::input::day_18::INPUT;
 
 pub fn part_1() -> i64 {
@@ -55,87 +55,6 @@ pub fn part_2() -> usize {
             return interpreters[1].send_count();
         }
         interpreter = (interpreter + 1) % interpreters.len();
-    }
-}
-
-#[derive(Debug, Default)]
-struct Queue(VecDeque<i64>);
-
-impl Queue {
-    pub fn push(&mut self, value: i64) {
-        self.0.push_back(value)
-    }
-
-    pub fn pop(&mut self) -> Option<i64> {
-        self.0.pop_front()
-    }
-
-    pub fn pop_last(&mut self) -> Option<i64> {
-        self.0.pop_back()
-    }
-}
-
-#[derive(Debug, Default)]
-struct Registers(HashMap<char, i64>);
-
-impl Registers {
-    pub fn get(&self, register: char) -> i64 {
-        self.0.get(&register).copied().unwrap_or_default()
-    }
-
-    pub fn set(&mut self, register: char, value: i64) {
-        self.0.insert(register, value);
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-enum Value {
-    Number(i64),
-    Register(char),
-}
-
-impl Value {
-    pub fn get(&self, registers: &Registers) -> i64 {
-        match self {
-            Self::Number(n) => *n,
-            Self::Register(register) => registers.get(*register),
-        }
-    }
-}
-
-impl FromStr for Value {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.parse::<i64>() {
-            Ok(n) => Self::Number(n),
-            Err(_) => Self::Register(s.chars().next().with_context(|| "empty value")?),
-        })
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum InstructionResult {
-    Unit,
-    JmpOffset(i64),
-    Received(i64),
-    Waiting,
-}
-
-impl InstructionResult {
-    pub fn jmp_offset(&self) -> i64 {
-        match self {
-            Self::JmpOffset(offset) => *offset,
-            Self::Waiting => 0,
-            _ => 1,
-        }
-    }
-
-    pub fn received(&self) -> Option<i64> {
-        match self {
-            Self::Received(n) => Some(*n),
-            _ => None,
-        }
     }
 }
 
@@ -203,25 +122,6 @@ impl Instruction {
 
         Ok(InstructionResult::Unit)
     }
-
-    fn read_register<'a, I>(parts: &mut I) -> Result<char, anyhow::Error>
-    where
-        I: Iterator<Item = &'a str>,
-    {
-        parts
-            .next()
-            .with_context(|| "missing register name")?
-            .chars()
-            .next()
-            .with_context(|| "empty register name")
-    }
-
-    fn read_value<'a, I>(parts: &mut I) -> Result<Value, anyhow::Error>
-    where
-        I: Iterator<Item = &'a str>,
-    {
-        parts.next().with_context(|| "missing value")?.parse()
-    }
 }
 
 impl FromStr for Instruction {
@@ -232,14 +132,39 @@ impl FromStr for Instruction {
         let opcode = parts.next().with_context(|| "empty instruction")?;
 
         match opcode {
-            "snd" => Ok(Self::Snd(Self::read_value(&mut parts)?)),
-            "set" => Ok(Self::Set(Self::read_register(&mut parts)?, Self::read_value(&mut parts)?)),
-            "add" => Ok(Self::Add(Self::read_register(&mut parts)?, Self::read_value(&mut parts)?)),
-            "mul" => Ok(Self::Mul(Self::read_register(&mut parts)?, Self::read_value(&mut parts)?)),
-            "mod" => Ok(Self::Mod(Self::read_register(&mut parts)?, Self::read_value(&mut parts)?)),
-            "rcv" => Ok(Self::Rcv(Self::read_register(&mut parts)?)),
-            "jgz" => Ok(Self::Jgz(Self::read_value(&mut parts)?, Self::read_value(&mut parts)?)),
+            "snd" => Ok(Self::Snd(read_value(&mut parts)?)),
+            "set" => Ok(Self::Set(read_register(&mut parts)?, read_value(&mut parts)?)),
+            "add" => Ok(Self::Add(read_register(&mut parts)?, read_value(&mut parts)?)),
+            "mul" => Ok(Self::Mul(read_register(&mut parts)?, read_value(&mut parts)?)),
+            "mod" => Ok(Self::Mod(read_register(&mut parts)?, read_value(&mut parts)?)),
+            "rcv" => Ok(Self::Rcv(read_register(&mut parts)?)),
+            "jgz" => Ok(Self::Jgz(read_value(&mut parts)?, read_value(&mut parts)?)),
             opcode => Err(anyhow!("invalid opcode: {opcode}")),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum InstructionResult {
+    Unit,
+    JmpOffset(i64),
+    Received(i64),
+    Waiting,
+}
+
+impl InstructionResult {
+    pub fn jmp_offset(&self) -> i64 {
+        match self {
+            Self::JmpOffset(offset) => *offset,
+            Self::Waiting => 0,
+            _ => 1,
+        }
+    }
+
+    pub fn received(&self) -> Option<i64> {
+        match self {
+            Self::Received(n) => Some(*n),
+            _ => None,
         }
     }
 }
@@ -268,7 +193,7 @@ impl FromStr for Program {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.lines().map(str::parse).collect::<Result<Vec<_>, _>>()?))
+        Ok(Self(read_instructions(s)?))
     }
 }
 
